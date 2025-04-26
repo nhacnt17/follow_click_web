@@ -13,57 +13,69 @@
   <script type="module">
     import { db, doc, setDoc, getDoc } from './firebase.js';
 
+    // Hàm lấy hoặc tạo cookie
+    function getCookie(name) {
+      const value = `; ${document.cookie}`;
+      const parts = value.split(`; ${name}=`);
+      if (parts.length === 2) return parts.pop().split(';').shift();
+      return null;
+    }
+
+    function setCookie(name, value, days) {
+      const expires = new Date(Date.now() + days * 864e5).toUTCString();
+      document.cookie = `${name}=${value}; expires=${expires}; path=/; SameSite=None; Secure`;
+    }
+
     async function trackVisit() {
-      // Tạo visitor ID ẩn danh nếu chưa có
-      if (!localStorage.getItem('visitor_id')) {
-        localStorage.setItem('visitor_id', crypto.randomUUID());
+      // Kiểm tra chế độ riêng tư
+      try {
+        localStorage.test = "test";
+        localStorage.removeItem("test");
+        console.log("✅ localStorage hoạt động");
+      } catch (e) {
+        console.warn("⚠️ localStorage bị chặn, có thể đang ở chế độ riêng tư");
       }
 
-      const visitorId = localStorage.getItem('visitor_id');
+      // Kiểm tra visitorId từ cookie
+      let visitorId = getCookie('visitor_id');
+      if (!visitorId) {
+        visitorId = crypto.randomUUID();
+        setCookie('visitor_id', visitorId, 365); // Lưu cookie trong 1 năm
+      }
+
       const visitTime = new Date().toISOString();
       const userAgent = navigator.userAgent;
       const screenSize = `${window.screen.width}x${window.screen.height}`;
 
-      // Dữ liệu lượt truy cập mới
       const newVisit = {
         visitTime,
         userAgent,
         screenSize
       };
 
-      // Log dữ liệu truy cập mới
       console.log("📋 Dữ liệu lượt truy cập mới:", newVisit);
 
       try {
-        // Tham chiếu đến document trong collection userclickprofile
         const visitorRef = doc(db, "userclickprofile", visitorId);
-
-        // Kiểm tra xem visitorId đã tồn tại chưa
         const visitorSnap = await Promise.race([
           getDoc(visitorRef),
           new Promise((_, reject) => setTimeout(() => reject(new Error("Timeout waiting for getDoc")), 10000))
         ]);
 
         if (visitorSnap.exists()) {
-          // Nếu đã tồn tại, lấy dữ liệu hiện tại và thêm lượt truy cập mới vào mảng visits
           const visitorData = visitorSnap.data();
           const updatedVisits = [...visitorData.visits, newVisit];
-
-          // Cập nhật document với mảng visits mới
           await Promise.race([
             setDoc(visitorRef, { ...visitorData, visits: updatedVisits }, { merge: true }),
             new Promise((_, reject) => setTimeout(() => reject(new Error("Timeout waiting for setDoc")), 10000))
           ]);
-
           console.log(`✅ Cập nhật lượt truy cập cho visitorId: ${visitorId}`);
           document.getElementById("status").innerText = `✅ Đã cập nhật lượt truy cập cho visitorId: ${visitorId}`;
         } else {
-          // Nếu chưa tồn tại, tạo document mới với mảng visits chứa lượt truy cập đầu tiên
           await Promise.race([
             setDoc(visitorRef, { visitorId, visits: [newVisit] }),
             new Promise((_, reject) => setTimeout(() => reject(new Error("Timeout waiting for setDoc")), 10000))
           ]);
-
           console.log(`✅ Tạo mới document cho visitorId: ${visitorId}`);
           document.getElementById("status").innerText = `✅ Đã tạo mới document cho visitorId: ${visitorId}`;
         }
