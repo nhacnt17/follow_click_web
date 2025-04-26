@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Ghi nhận truy cập ẩn danh</title>
+</head>
+<body>
+  <h1>🔥 Chào bạn đến với FollowClickWeb</h1>
+  <p>Lượt truy cập của bạn đang được ghi nhận vào Firebase...</p>
+
+  <script type="module">
+    import { db, collection, addDoc } from './firebase.js';  <!-- ✅ Import đúng thư mục -->
+
+    // Tạo visitor ID ẩn danh nếu chưa có
+    if (!localStorage.getItem('visitor_id')) {
+      localStorage.setItem('visitor_id', crypto.randomUUID());
+    }
+
+    const visitorId = localStorage.getItem('visitor_id');
+    const visitTime = new Date().toISOString();
+    const userAgent = navigator.userAgent;
+    const screenSize = `${window.screen.width}x${window.screen.height}`;
+
+    try {
+      await addDoc(collection(db, "visits"), {
+        visitorId,
+        visitTime,
+        userAgent,
+        screenSize
+      });
+      console.log("✅ Visit tracked!");
+    } catch (e) {
+      console.error("❌ Error tracking visit: ", e);
+    }
+  </script>
+</body>
+</html>
