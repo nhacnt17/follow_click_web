@@ -11,62 +11,69 @@
   <p id="status">Đang xử lý...</p>
 
   <script type="module">
-    import { db, doc, setDoc, getDoc, collection } from './firebase.js';
+    import { db, doc, setDoc, getDoc } from './firebase.js';
 
-    // Tạo visitor ID ẩn danh nếu chưa có
-    if (!localStorage.getItem('visitor_id')) {
-      localStorage.setItem('visitor_id', crypto.randomUUID());
-    }
-
-    const visitorId = localStorage.getItem('visitor_id');
-    const visitTime = new Date().toISOString();
-    const userAgent = navigator.userAgent;
-    const screenSize = `${window.screen.width}x${window.screen.height}`;
-
-    // Dữ liệu lượt truy cập mới
-    const newVisit = {
-      visitTime,
-      userAgent,
-      screenSize
-    };
-
-    // Log dữ liệu truy cập mới
-    console.log("📋 Dữ liệu lượt truy cập mới:", newVisit);
-
-    try {
-      // Tham chiếu đến document trong collection followclick/visitors
-      const visitorRef = doc(db, "userclickprofile", visitorId);
-
-      // Kiểm tra xem visitorId đã tồn tại chưa
-      const visitorSnap = await getDoc(visitorRef);
-
-      if (visitorSnap.exists()) {
-        // Nếu đã tồn tại, lấy dữ liệu hiện tại và thêm lượt truy cập mới vào mảng visits
-        const visitorData = visitorSnap.data();
-        const updatedVisits = [...visitorData.visits, newVisit];
-
-        // Cập nhật document với mảng visits mới
-        await setDoc(visitorRef, {
-          ...visitorData,
-          visits: updatedVisits
-        }, { merge: true });
-
-        console.log(`✅ Cập nhật lượt truy cập cho visitorId: ${visitorId}`);
-        document.getElementById("status").innerText = `✅ Đã cập nhật lượt truy cập cho visitorId: ${visitorId}`;
-      } else {
-        // Nếu chưa tồn tại, tạo document mới với mảng visits chứa lượt truy cập đầu tiên
-        await setDoc(visitorRef, {
-          visitorId,
-          visits: [newVisit]
-        });
-
-        console.log(`✅ Tạo mới document cho visitorId: ${visitorId}`);
-        document.getElementById("status").innerText = `✅ Đã tạo mới document cho visitorId: ${visitorId}`;
+    async function trackVisit() {
+      // Tạo visitor ID ẩn danh nếu chưa có
+      if (!localStorage.getItem('visitor_id')) {
+        localStorage.setItem('visitor_id', crypto.randomUUID());
       }
-    } catch (e) {
-      console.error("❌ Lỗi khi ghi nhận truy cập:", e.message);
-      document.getElementById("status").innerText = `❌ Lỗi: ${e.message}`;
+
+      const visitorId = localStorage.getItem('visitor_id');
+      const visitTime = new Date().toISOString();
+      const userAgent = navigator.userAgent;
+      const screenSize = `${window.screen.width}x${window.screen.height}`;
+
+      // Dữ liệu lượt truy cập mới
+      const newVisit = {
+        visitTime,
+        userAgent,
+        screenSize
+      };
+
+      // Log dữ liệu truy cập mới
+      console.log("📋 Dữ liệu lượt truy cập mới:", newVisit);
+
+      try {
+        // Tham chiếu đến document trong collection userclickprofile
+        const visitorRef = doc(db, "userclickprofile", visitorId);
+
+        // Kiểm tra xem visitorId đã tồn tại chưa
+        const visitorSnap = await Promise.race([
+          getDoc(visitorRef),
+          new Promise((_, reject) => setTimeout(() => reject(new Error("Timeout waiting for getDoc")), 10000))
+        ]);
+
+        if (visitorSnap.exists()) {
+          // Nếu đã tồn tại, lấy dữ liệu hiện tại và thêm lượt truy cập mới vào mảng visits
+          const visitorData = visitorSnap.data();
+          const updatedVisits = [...visitorData.visits, newVisit];
+
+          // Cập nhật document với mảng visits mới
+          await Promise.race([
+            setDoc(visitorRef, { ...visitorData, visits: updatedVisits }, { merge: true }),
+            new Promise((_, reject) => setTimeout(() => reject(new Error("Timeout waiting for setDoc")), 10000))
+          ]);
+
+          console.log(`✅ Cập nhật lượt truy cập cho visitorId: ${visitorId}`);
+          document.getElementById("status").innerText = `✅ Đã cập nhật lượt truy cập cho visitorId: ${visitorId}`;
+        } else {
+          // Nếu chưa tồn tại, tạo document mới với mảng visits chứa lượt truy cập đầu tiên
+          await Promise.race([
+            setDoc(visitorRef, { visitorId, visits: [newVisit] }),
+            new Promise((_, reject) => setTimeout(() => reject(new Error("Timeout waiting for setDoc")), 10000))
+          ]);
+
+          console.log(`✅ Tạo mới document cho visitorId: ${visitorId}`);
+          document.getElementById("status").innerText = `✅ Đã tạo mới document cho visitorId: ${visitorId}`;
+        }
+      } catch (e) {
+        console.error("❌ Lỗi khi ghi nhận truy cập:", e.message);
+        document.getElementById("status").innerText = `❌ Lỗi: ${e.message}`;
+      }
     }
+
+    trackVisit();
   </script>
 </body>
 </html>

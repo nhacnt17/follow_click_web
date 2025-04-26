@@ -1,9 +1,8 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-app.js";
-import { getFirestore, collection, addDoc, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-firestore.js";
+import { getFirestore, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-firestore.js";
 
-// Cấu hình Firebase của bạn
 const firebaseConfig = {
-  apiKey: "AIzaSyCCkZuuaO5xqex7n2ChqVPy17NtITtLaoI",
+  apiKey: "AIzaSyCCkZuuaO5xqex7n2ChqVPy17NtITtLaoI", 
   authDomain: "followclickweb.firebaseapp.com",
   projectId: "followclickweb",
   storageBucket: "followclickweb.firebasestorage.app",
@@ -12,9 +11,7 @@ const firebaseConfig = {
   measurementId: "G-TJKJ6RPY5R"
 };
 
-// Khởi tạo Firebase
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
-// Xuất các hàm để dùng trong HTML
-export { db, collection, addDoc, doc, setDoc, getDoc };
+export { db, doc, setDoc, getDoc };
