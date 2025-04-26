@@ -27,20 +27,32 @@
     }
 
     async function trackVisit() {
-      // Kiểm tra chế độ riêng tư
+      let visitorId;
+      let storageMethod = "localStorage"; // Theo dõi phương thức lưu trữ
+
+      // Thử sử dụng localStorage trước
       try {
-        localStorage.test = "test";
+        // Kiểm tra xem localStorage có hoạt động không
+        localStorage.setItem("test", "test");
         localStorage.removeItem("test");
         console.log("✅ localStorage hoạt động");
-      } catch (e) {
-        console.warn("⚠️ localStorage bị chặn, có thể đang ở chế độ riêng tư");
-      }
 
-      // Kiểm tra visitorId từ cookie
-      let visitorId = getCookie('visitor_id');
-      if (!visitorId) {
-        visitorId = crypto.randomUUID();
-        setCookie('visitor_id', visitorId, 365); // Lưu cookie trong 1 năm
+        // Lấy hoặc tạo visitorId từ localStorage
+        if (!localStorage.getItem('visitor_id')) {
+          localStorage.setItem('visitor_id', crypto.randomUUID());
+        }
+        visitorId = localStorage.getItem('visitor_id');
+      } catch (e) {
+        // Nếu localStorage bị chặn, chuyển sang cookie
+        console.warn("⚠️ localStorage bị chặn, chuyển sang dùng cookie:", e.message);
+        storageMethod = "cookie";
+
+        // Lấy hoặc tạo visitorId từ cookie
+        visitorId = getCookie('visitor_id');
+        if (!visitorId) {
+          visitorId = crypto.randomUUID();
+          setCookie('visitor_id', visitorId, 365); // Lưu cookie 1 năm
+        }
       }
 
       const visitTime = new Date().toISOString();
@@ -50,7 +62,8 @@
       const newVisit = {
         visitTime,
         userAgent,
-        screenSize
+        screenSize,
+        storageMethod // Lưu phương thức lưu trữ để debug
       };
 
       console.log("📋 Dữ liệu lượt truy cập mới:", newVisit);
@@ -69,14 +82,14 @@
             setDoc(visitorRef, { ...visitorData, visits: updatedVisits }, { merge: true }),
             new Promise((_, reject) => setTimeout(() => reject(new Error("Timeout waiting for setDoc")), 10000))
           ]);
-          console.log(`✅ Cập nhật lượt truy cập cho visitorId: ${visitorId}`);
+          console.log(`✅ Cập nhật lượt truy cập cho visitorId: ${visitorId} (Phương thức: ${storageMethod})`);
           document.getElementById("status").innerText = `✅ Đã cập nhật lượt truy cập cho visitorId: ${visitorId}`;
         } else {
           await Promise.race([
             setDoc(visitorRef, { visitorId, visits: [newVisit] }),
             new Promise((_, reject) => setTimeout(() => reject(new Error("Timeout waiting for setDoc")), 10000))
           ]);
-          console.log(`✅ Tạo mới document cho visitorId: ${visitorId}`);
+          console.log(`✅ Tạo mới document cho visitorId: ${visitorId} (Phương thức: ${storageMethod})`);
           document.getElementById("status").innerText = `✅ Đã tạo mới document cho visitorId: ${visitorId}`;
         }
       } catch (e) {
