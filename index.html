@@ -30,6 +30,20 @@
       let visitorId;
       let storageMethod = "localStorage";
       const startTime = Date.now(); // Ghi lại thời gian bắt đầu
+      let timeSpent = 0;
+
+      // Cập nhật timeSpent khi trang bị ẩn hoặc rời trang
+      const updateTimeSpent = () => {
+        timeSpent = (Date.now() - startTime) / 1000; // Tính bằng giây
+        console.log(`⏱ Thời gian truy cập: ${timeSpent} giây`);
+      };
+
+      document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'hidden') {
+          updateTimeSpent();
+        }
+      });
+      window.addEventListener('beforeunload', updateTimeSpent);
 
       // Thử sử dụng localStorage trước
       try {
@@ -56,22 +70,18 @@
       const userAgent = navigator.userAgent;
       const screenSize = `${window.screen.width}x${window.screen.height}`;
 
-      // Tính thời gian truy cập khi rời trang
-      let timeSpent = 0;
-      window.addEventListener('beforeunload', () => {
-        timeSpent = (Date.now() - startTime) / 1000; // Tính bằng giây
-        console.log(`⏱ Thời gian truy cập: ${timeSpent} giây`);
-      });
+      // Chờ một khoảng thời gian để ghi lại thời gian truy cập
+      await new Promise(resolve => setTimeout(resolve, 500)); // Tăng lên 500ms để có thời gian tính timeSpent
 
-      // Chờ một chút để đảm bảo timeSpent được cập nhật
-      await new Promise(resolve => setTimeout(resolve, 100));
+      // Cập nhật timeSpent trước khi ghi vào Firestore
+      updateTimeSpent();
 
       const newVisit = {
         visitTime,
         userAgent,
         screenSize,
         storageMethod,
-        timeSpent // Lưu thời gian truy cập (giây)
+        timeSpent: timeSpent || 0.1 // Đảm bảo không ghi 0
       };
 
       console.log("📋 Dữ liệu lượt truy cập mới:", newVisit);
