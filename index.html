@@ -28,30 +28,27 @@
 
     async function trackVisit() {
       let visitorId;
-      let storageMethod = "localStorage"; // Theo dõi phương thức lưu trữ
+      let storageMethod = "localStorage";
+      const startTime = Date.now(); // Ghi lại thời gian bắt đầu
 
       // Thử sử dụng localStorage trước
       try {
-        // Kiểm tra xem localStorage có hoạt động không
         localStorage.setItem("test", "test");
         localStorage.removeItem("test");
         console.log("✅ localStorage hoạt động");
 
-        // Lấy hoặc tạo visitorId từ localStorage
         if (!localStorage.getItem('visitor_id')) {
           localStorage.setItem('visitor_id', crypto.randomUUID());
         }
         visitorId = localStorage.getItem('visitor_id');
       } catch (e) {
-        // Nếu localStorage bị chặn, chuyển sang cookie
         console.warn("⚠️ localStorage bị chặn, chuyển sang dùng cookie:", e.message);
         storageMethod = "cookie";
 
-        // Lấy hoặc tạo visitorId từ cookie
         visitorId = getCookie('visitor_id');
         if (!visitorId) {
           visitorId = crypto.randomUUID();
-          setCookie('visitor_id', visitorId, 365); // Lưu cookie 1 năm
+          setCookie('visitor_id', visitorId, 365);
         }
       }
 
@@ -59,11 +56,22 @@
       const userAgent = navigator.userAgent;
       const screenSize = `${window.screen.width}x${window.screen.height}`;
 
+      // Hàm tính thời gian truy cập khi rời trang
+      let timeSpent = 0;
+      window.addEventListener('beforeunload', () => {
+        timeSpent = (Date.now() - startTime) / 1000; // Tính bằng giây
+        console.log(`⏱ Thời gian truy cập: ${timeSpent} giây`);
+      });
+
+      // Chờ một chút để đảm bảo timeSpent được cập nhật (nếu rời trang ngay)
+      await new Promise(resolve => setTimeout(resolve, 100));
+
       const newVisit = {
         visitTime,
         userAgent,
         screenSize,
-        storageMethod // Lưu phương thức lưu trữ để debug
+        storageMethod,
+        timeSpent // Lưu thời gian truy cập (giây)
       };
 
       console.log("📋 Dữ liệu lượt truy cập mới:", newVisit);
