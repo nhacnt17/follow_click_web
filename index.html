@@ -56,14 +56,14 @@
       const userAgent = navigator.userAgent;
       const screenSize = `${window.screen.width}x${window.screen.height}`;
 
-      // Hàm tính thời gian truy cập khi rời trang
+      // Tính thời gian truy cập khi rời trang
       let timeSpent = 0;
       window.addEventListener('beforeunload', () => {
         timeSpent = (Date.now() - startTime) / 1000; // Tính bằng giây
         console.log(`⏱ Thời gian truy cập: ${timeSpent} giây`);
       });
 
-      // Chờ một chút để đảm bảo timeSpent được cập nhật (nếu rời trang ngay)
+      // Chờ một chút để đảm bảo timeSpent được cập nhật
       await new Promise(resolve => setTimeout(resolve, 100));
 
       const newVisit = {
