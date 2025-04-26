@@ -1,6 +1,5 @@
-// firebase.js
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-app.js";
-import { getFirestore, collection, addDoc } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-firestore.js";
+import { getFirestore, collection, addDoc, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-firestore.js";
 
 // Cấu hình Firebase của bạn
 const firebaseConfig = {
@@ -17,5 +16,5 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
-// Xuất để dùng trong HTML
-export { db, collection, addDoc };
+// Xuất các hàm để dùng trong HTML
+export { db, collection, addDoc, doc, setDoc, getDoc };

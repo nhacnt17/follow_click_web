@@ -8,9 +8,10 @@
 <body>
   <h1>🔥 Chào bạn đến với FollowClickWeb</h1>
   <p>Lượt truy cập của bạn đang được ghi nhận vào Firebase...</p>
+  <p id="status">Đang xử lý...</p>
 
   <script type="module">
-    import { db, collection, addDoc } from './firebase.js';  <!-- ✅ Import đúng thư mục -->
+    import { db, doc, setDoc, getDoc, collection } from './firebase.js';
 
     // Tạo visitor ID ẩn danh nếu chưa có
     if (!localStorage.getItem('visitor_id')) {
@@ -22,16 +23,49 @@
     const userAgent = navigator.userAgent;
     const screenSize = `${window.screen.width}x${window.screen.height}`;
 
+    // Dữ liệu lượt truy cập mới
+    const newVisit = {
+      visitTime,
+      userAgent,
+      screenSize
+    };
+
+    // Log dữ liệu truy cập mới
+    console.log("📋 Dữ liệu lượt truy cập mới:", newVisit);
+
     try {
-      await addDoc(collection(db, "visits"), {
-        visitorId,
-        visitTime,
-        userAgent,
-        screenSize
-      });
-      console.log("✅ Visit tracked!");
+      // Tham chiếu đến document trong collection followclick/visitors
+      const visitorRef = doc(db, "followclick", "visitors", "visitor", visitorId);
+
+      // Kiểm tra xem visitorId đã tồn tại chưa
+      const visitorSnap = await getDoc(visitorRef);
+
+      if (visitorSnap.exists()) {
+        // Nếu đã tồn tại, lấy dữ liệu hiện tại và thêm lượt truy cập mới vào mảng visits
+        const visitorData = visitorSnap.data();
+        const updatedVisits = [...visitorData.visits, newVisit];
+
+        // Cập nhật document với mảng visits mới
+        await setDoc(visitorRef, {
+          ...visitorData,
+          visits: updatedVisits
+        }, { merge: true });
+
+        console.log(`✅ Cập nhật lượt truy cập cho visitorId: ${visitorId}`);
+        document.getElementById("status").innerText = `✅ Đã cập nhật lượt truy cập cho visitorId: ${visitorId}`;
+      } else {
+        // Nếu chưa tồn tại, tạo document mới với mảng visits chứa lượt truy cập đầu tiên
+        await setDoc(visitorRef, {
+          visitorId,
+          visits: [newVisit]
+        });
+
+        console.log(`✅ Tạo mới document cho visitorId: ${visitorId}`);
+        document.getElementById("status").innerText = `✅ Đã tạo mới document cho visitorId: ${visitorId}`;
+      }
     } catch (e) {
-      console.error("❌ Error tracking visit: ", e);
+      console.error("❌ Lỗi khi ghi nhận truy cập:", e.message);
+      document.getElementById("status").innerText = `❌ Lỗi: ${e.message}`;
     }
   </script>
 </body>
