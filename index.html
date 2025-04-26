@@ -35,7 +35,7 @@
 
     try {
       // Tham chiếu đến document trong collection followclick/visitors
-      const visitorRef = doc(db, "followclick", "visitors", "visitor", visitorId);
+      const visitorRef = doc(db, "userclickprofile", visitorId);
 
       // Kiểm tra xem visitorId đã tồn tại chưa
       const visitorSnap = await getDoc(visitorRef);
